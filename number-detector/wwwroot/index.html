@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html ng-app="digitApp">
+<head>
+    <meta charset="utf-8" />
+    <title>Digit Recognizer</title>
+    <!-- Подключаем AngularJS с CDN -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <style>
+        #drawingCanvas {
+            border: 1px solid #000;
+            touch-action: none; /* Отключаем дефолтные жесты на сенсорных устройствах */
+        }
+    </style>
+</head>
+<body ng-controller="DrawingController">
+    <h1>Нарисуйте цифру</h1>
+    <canvas id="drawingCanvas" width="280" height="280"></canvas>
+    <br />
+    <button ng-click="clearCanvas()">Очистить</button>
+    <button ng-click="sendDrawing()">Угадать</button>
+    <p>Результат: {{ prediction }}</p>
+
+    <script>
+        // Создаем AngularJS модуль и контроллер
+        var app = angular.module('digitApp', []);
+
+        app.controller('DrawingController', ['$scope', '$http', function ($scope, $http) {
+            var canvas = document.getElementById('drawingCanvas');
+            var context = canvas.getContext('2d');
+            var drawing = false;
+
+            // Задаем начальные настройки: белый фон
+            context.fillStyle = "white";
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.lineWidth = 15;
+            context.lineCap = "round";
+            context.strokeStyle = "black";
+
+            // Функции для обработки рисования
+            canvas.addEventListener('mousedown', function (e) {
+                drawing = true;
+                context.beginPath();
+                context.moveTo(e.offsetX, e.offsetY);
+            });
+
+            canvas.addEventListener('mousemove', function (e) {
+                if (drawing) {
+                    context.lineTo(e.offsetX, e.offsetY);
+                    context.stroke();
+                }
+            });
+
+            canvas.addEventListener('mouseup', function () {
+                drawing = false;
+            });
+
+            canvas.addEventListener('mouseout', function () {
+                drawing = false;
+            });
+
+            // Для сенсорных устройств
+            canvas.addEventListener('touchstart', function (e) {
+                e.preventDefault();
+                var touch = e.touches[0];
+                var rect = canvas.getBoundingClientRect();
+                context.beginPath();
+                context.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+            });
+
+            canvas.addEventListener('touchmove', function (e) {
+                e.preventDefault();
+                var touch = e.touches[0];
+                var rect = canvas.getBoundingClientRect();
+                context.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+                context.stroke();
+            });
+
+            // Очистка холста
+            $scope.clearCanvas = function () {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                context.fillStyle = "white";
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                $scope.prediction = "";
+            };
+
+            // Функция для отправки изображения на сервер
+            $scope.sendDrawing = function () {
+                // Получаем изображение в формате dataURL (например, PNG)
+                var imageData = canvas.toDataURL('image/png');
+                // Отправляем на сервер (предполагается, что API находится по адресу /api/recognize)
+                $http.post('/api/default', { image: imageData })
+                    .then(function (response) {
+                        $scope.prediction = response.data.prediction;
+                    }, function (error) {
+                        console.error('Ошибка при отправке изображения', error);
+                    });
+            };
+        }]);
+    </script>
+</body>
+</html>
