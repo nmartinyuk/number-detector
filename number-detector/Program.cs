@@ -1,28 +1,3 @@
-var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-builder.Services.AddRazorPages();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
-}
-
-app.UseHttpsRedirection();
-
-app.UseRouting();
-
-// Использование файлов по умолчанию (index.html)
-app.UseDefaultFiles();
-
-// Обслуживание статических файлов из папки wwwroot
-app.UseStaticFiles();
-
-app.MapControllers();
-
+var app = WebApplication.CreateBuilder().Build();
+app.Map("", async context => await context.Response.SendFileAsync("wwwroot/index.html"));
 app.Run();
